@@ -4,7 +4,11 @@ import { z } from 'zod'
 import { FastifyInstance } from 'fastify'
 
 export async function transactionsRoutes(app: FastifyInstance) {
-  app.get('/', async () => {
+  app.get('/', async (req, reply) => {
+    const sessionId = req.cookies.sessionId
+
+    if (!sessionId) return reply.status(401).send()
+
     const transactions = await KnexDB('transactions').select('*')
 
     return { transactions }
@@ -44,7 +48,7 @@ export async function transactionsRoutes(app: FastifyInstance) {
     if (!sessionId) {
       sessionId = randomUUID()
       reply.cookie('sessionId', sessionId, {
-        path: '/transactions',
+        path: '/',
         maxAge: 1000 * 60 * 60 * 24 * 7, // 7 dias
       })
     }
