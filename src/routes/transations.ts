@@ -2,7 +2,7 @@ import crypto, { randomUUID } from 'node:crypto'
 import { KnexDB } from '../database'
 import { z } from 'zod'
 import { FastifyInstance } from 'fastify'
-import { checkSessionIdExists } from '../middleware/checkSessionIdExists'
+import { checkSessionIdExists } from '../middlewares/checkSessionIdExists'
 
 export async function transactionsRoutes(app: FastifyInstance) {
   app.get(
