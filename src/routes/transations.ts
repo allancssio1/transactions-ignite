@@ -2,37 +2,64 @@ import crypto, { randomUUID } from 'node:crypto'
 import { KnexDB } from '../database'
 import { z } from 'zod'
 import { FastifyInstance } from 'fastify'
+import { checkSessionIdExists } from '../middleware/checkSessionIdExists'
 
 export async function transactionsRoutes(app: FastifyInstance) {
-  app.get('/', async (req, reply) => {
-    const sessionId = req.cookies.sessionId
+  app.get(
+    '/',
+    {
+      preHandler: [checkSessionIdExists],
+    },
+    async (req, reply) => {
+      const { sessionId } = req.cookies
+      const transactions = await KnexDB('transactions')
+        .where('session_id', sessionId)
+        .select('*')
 
-    if (!sessionId) return reply.status(401).send()
+      return { transactions }
+    },
+  )
 
-    const transactions = await KnexDB('transactions').select('*')
+  app.get(
+    '/:id',
+    {
+      preHandler: [checkSessionIdExists],
+    },
+    async (req) => {
+      const getTransactionParamsSchema = z.object({
+        id: z.string().uuid(),
+      })
 
-    return { transactions }
-  })
+      const { id } = getTransactionParamsSchema.parse(req.params)
+      const { sessionId } = req.cookies
 
-  app.get('/:id', async (req) => {
-    const getTransactionParamsSchema = z.object({
-      id: z.string().uuid(),
-    })
+      const transaction = await KnexDB('transactions')
+        .where({
+          session_id: sessionId,
+          id,
+        })
+        .first() // first para trazer somente uma opção em forma de objeto.
 
-    const { id } = getTransactionParamsSchema.parse(req.params)
+      return { transaction }
+    },
+  )
 
-    const transaction = await KnexDB('transactions').where('id', id).first() // first para trazer somente uma opção em forma de objeto.
+  app.get(
+    '/summary',
+    {
+      preHandler: [checkSessionIdExists],
+    },
+    async (req) => {
+      const { sessionId } = req.cookies
+      const summary = await KnexDB('transactions')
+        .where('session_id', sessionId)
+        .sum('amount', { as: 'amount  ' })
+        .first()
+      console.log(summary)
 
-    return { transaction }
-  })
-
-  app.get('/summary', async () => {
-    const summary = await KnexDB('transactions')
-      .sum('amount', { as: 'amount  ' })
-      .first()
-
-    return { summary }
-  })
+      return { summary }
+    },
+  )
 
   app.post('/', async (req, reply) => {
     const createTransactionBodySchema = z.object({
