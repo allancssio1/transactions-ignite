@@ -1,5 +1,6 @@
 // test e it tem a mesma funcionalidade, mas o it é usado mais para descrever possibilidade da aplicação
-import { expect, it, beforeAll, afterAll, describe } from 'vitest'
+import { expect, it, beforeAll, afterAll, describe, beforeEach } from 'vitest'
+import { execSync } from 'node:child_process'
 import request from 'supertest' // rodar testes sem ter que subir aplicação inteira (obs: instalar @types junto)
 import { app } from '../src/app'
 
@@ -20,6 +21,18 @@ describe('Transactions routes', () => {
 */
   afterAll(async () => {
     await app.close()
+  })
+
+  /*
+    ao alterar o dotenv para test, as migrations no knex nao foram rodadas.
+    então essa configuração do beforeEach vai rodar antes de cada teste
+    usando execSync no node:child_process para dorar comandos de terminal pelo código;
+    entao ele vai usar um rollback para apagar o banco de dados
+    e em seguida latest para criar um banco de dados novo para os testes.
+  */
+  beforeEach(() => {
+    execSync('yarn knex -- migrate:rollback --all')
+    execSync('yarn knex -- migrate:latest')
   })
 
   it('Should be able to create a new transaction.', async () => {
