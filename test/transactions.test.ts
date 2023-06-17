@@ -70,4 +70,35 @@ describe('Transactions routes', () => {
       }),
     ])
   })
+
+  it('Should be able to list transaction by id', async () => {
+    const createTransactionResponse = await request(app.server)
+      .post('/transactions')
+      .send({
+        title: 'new transation test',
+        amount: 5000,
+        type: 'credit',
+      })
+
+    const coockies = createTransactionResponse.get('Set-Cookie')
+
+    const listTransactionResponse = await request(app.server)
+      .get('/transactions')
+      .set('Cookie', coockies)
+
+    const transactionId = listTransactionResponse.body.transactions[0].id
+
+    const getTransactionResponse = await request(app.server)
+      .get(`/transactions/${transactionId}`)
+      .set('Cookie', coockies)
+
+    expect(getTransactionResponse.status).toEqual(200)
+    // essa verificação vai observar se dentro no corpo da resposta possue esses campos passados.
+    expect(getTransactionResponse.body.transaction).toEqual(
+      expect.objectContaining({
+        title: 'new transation test',
+        amount: 5000,
+      }),
+    )
+  })
 })
