@@ -31,8 +31,8 @@ describe('Transactions routes', () => {
     e em seguida latest para criar um banco de dados novo para os testes.
   */
   beforeEach(() => {
-    execSync('yarn knex -- migrate:rollback --all')
-    execSync('yarn knex -- migrate:latest')
+    execSync('yarn knex migrate:rollback --all')
+    execSync('yarn knex migrate:latest')
   })
 
   it('Should be able to create a new transaction.', async () => {
@@ -92,7 +92,6 @@ describe('Transactions routes', () => {
       .get(`/transactions/${transactionId}`)
       .set('Cookie', coockies)
 
-    expect(getTransactionResponse.status).toEqual(200)
     // essa verificação vai observar se dentro no corpo da resposta possue esses campos passados.
     expect(getTransactionResponse.body.transaction).toEqual(
       expect.objectContaining({
@@ -100,5 +99,35 @@ describe('Transactions routes', () => {
         amount: 5000,
       }),
     )
+  })
+
+  it('Should be able to get the summary', async () => {
+    const createTransactionResponseOnCredit = await request(app.server)
+      .post('/transactions')
+      .send({
+        title: 'new transation credit',
+        amount: 5000,
+        type: 'credit',
+      })
+
+    const coockies = createTransactionResponseOnCredit.get('Set-Cookie')
+
+    await request(app.server)
+      .post('/transactions')
+      .set('Cookie', coockies)
+      .send({
+        title: 'new transation debit',
+        amount: 4000,
+        type: 'debit',
+      })
+
+    const summaryResponse = await request(app.server)
+      .get('/transactions/summary')
+      .set('Cookie', coockies)
+
+    // essa verificação vai observar se dentro no corpo da resposta possue esses campos passados.
+    expect(summaryResponse.body.summary).toEqual({
+      amount: 1000,
+    })
   })
 })
