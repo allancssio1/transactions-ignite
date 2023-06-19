@@ -20,6 +20,10 @@ export async function transactionsRoutes(app: FastifyInstance) {
     },
   )
 
+  app.get('/achou', async (req, reply) => {
+    return reply.status(200).send('achou a rota')
+  })
+
   app.get(
     '/:id',
     {
